@@ -21,7 +21,6 @@ RUN curl https://codeload.github.com/skoobe/riofs/zip/$RIOFS_GIT_COMMIT -o riofs
 
 RUN mkdir /bids_dataset && mkdir /outputs && mkdir /var/log/docker
 
-COPY exit-event /usr/local/bin/exit-event
 COPY run-bids-app.sh /run-bids-app.sh
 COPY supervisord.conf /supervisord.conf
 
