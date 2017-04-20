@@ -1,6 +1,6 @@
 FROM docker:17.04.0-dind
 
-ENV S3FS_VERSION 1.80
+ENV S3FS_VERSION master
 
 # Extend dind with the aws sdk
 RUN apk --no-cache update && \
@@ -9,7 +9,7 @@ RUN apk --no-cache update && \
     rm -rf /var/cache/apk/*
 
 RUN mkdir /usr/src && \
-    curl -L https://github.com/s3fs-fuse/s3fs-fuse/archive/v${S3FS_VERSION}.tar.gz | tar zxv -C /usr/src && \
+    curl -L https://github.com/s3fs-fuse/s3fs-fuse/archive/${S3FS_VERSION}.tar.gz | tar zxv -C /usr/src && \
     cd /usr/src/s3fs-fuse-${S3FS_VERSION} && \
     ./autogen.sh && \
     ./configure --prefix=/usr && \
