@@ -23,7 +23,9 @@ else
 fi
 
 # Make sure we've given time for Docker to start
-sleep 5
+until [ -S /var/run/docker.sock ]; do
+    sleep 0.1
+done
 
 if [ -z "$PARTICIPANT_FLAG" ]; then
     docker run -i --rm \
