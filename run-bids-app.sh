@@ -7,6 +7,11 @@
 # PARTICIPANT_FLAG
 # PARTICIPANT_LABEL
 
+if [ "$(ps -o comm= $PPID)" == "supervisord" ]; then
+    # Always kill supervisord when this script exits
+    trap 'kill -s SIGTERM $(supervisorctl pid)' EXIT
+fi
+
 set -e
 set -o pipefail
 
