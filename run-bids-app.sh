@@ -27,8 +27,8 @@ fi
 mkdir -p /tmp/bids_dataset
 mkdir -p /tmp/outputs
 
-s3fs -o "use_cache=/tmp/bids_dataset" -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
-s3fs -o "use_cache=/tmp/outputs" -o "allow_other" $OUTPUT_DIR_BUCKET /outputs
+s3fs -o "use_cache=/tmp/bids_dataset" -o "allow_other" -o "iam_role=auto" $BIDS_DIR_BUCKET /bids_dataset
+s3fs -o "use_cache=/tmp/outputs" -o "allow_other" -o "iam_role=auto" $OUTPUT_DIR_BUCKET /outputs
 
 # Make sure we've given time for Docker to start
 until [ -S /var/run/docker.sock ]; do
