@@ -14,6 +14,16 @@ fi
 
 set -eo pipefail
 
+if [ -z "$BIDS_CONTAINER" ]; then
+    echo "Error: Missing env variable BIDS_CONTAINER." && exit 1
+elif [ -z "$BIDS_DIR_BUCKET" ]; then
+    echo "Error: Missing env variable BIDS_DIR_BUCKET." && exit 1
+elif [ -z "$OUTPUT_DIR_BUCKET" ]; then
+    echo "Error: Missing env variable OUTPUT_DIR_BUCKET." && exit 1
+elif [ -z "$BIDS_SNAPSHOT_ID" ]; then
+    echo "Error: Missing env variable OUTPUT_DIR_BUCKET." && exit 1
+fi
+
 mkdir -p /tmp/bids_dataset
 mkdir -p /tmp/outputs
 
