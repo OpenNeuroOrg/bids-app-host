@@ -12,8 +12,7 @@ if [ "$(ps -o comm= $PPID)" == "supervisord" ]; then
     trap 'kill -s SIGTERM $(supervisorctl pid)' EXIT
 fi
 
-set -e
-set -o pipefail
+set -eo pipefail
 
 if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY"]; then
     riofs -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
