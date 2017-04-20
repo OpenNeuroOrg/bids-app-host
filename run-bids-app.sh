@@ -14,13 +14,8 @@ fi
 
 set -eo pipefail
 
-if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY"]; then
-    riofs -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
-    riofs -o "allow_other" $OUTPUT_DIR_BUCKET /outputs
-else
-    echo "Error: AWS parameters not passed to this container"
-    exit 1
-fi
+s3fs -o "use_cache=/tmp/bids_dataset" -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
+s3fs -o "use_cache=/tmp/outputs" -o "allow_other" $OUTPUT_DIR_BUCKET /outputs
 
 # Make sure we've given time for Docker to start
 until [ -S /var/run/docker.sock ]; do

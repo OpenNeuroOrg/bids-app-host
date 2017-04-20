@@ -1,6 +1,6 @@
 FROM docker:17.04.0-dind
 
-ENV RIOFS_GIT_COMMIT a01ec17bda2ec7363a15f072ecb7893972067ad0
+ENV S3FS_VERSION 1.80
 
 # Extend dind with the aws sdk
 RUN apk --no-cache update && \
@@ -8,16 +8,14 @@ RUN apk --no-cache update && \
     pip --no-cache-dir install awscli && \
     rm -rf /var/cache/apk/*
 
-RUN curl https://codeload.github.com/skoobe/riofs/zip/$RIOFS_GIT_COMMIT -o riofs.zip && \
-    unzip -x riofs.zip && \
-    rm riofs.zip && \
-    cd riofs-$RIOFS_GIT_COMMIT && \
+RUN mkdir /usr/src && \
+    curl -L https://github.com/s3fs-fuse/s3fs-fuse/archive/v${S3FS_VERSION}.tar.gz | tar zxv -C /usr/src && \
+    cd /usr/src/s3fs-fuse-${S3FS_VERSION} && \
     ./autogen.sh && \
-    ./configure && \
+    ./configure --prefix=/usr && \
     make && \
     make install && \
-    cd .. && \
-    rm -rf riofs-$RIOFS_GIT_COMMIT
+    rm -r /usr/src
 
 RUN mkdir /bids_dataset && mkdir /outputs && mkdir /var/log/docker
 
