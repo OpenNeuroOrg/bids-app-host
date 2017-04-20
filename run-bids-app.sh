@@ -7,9 +7,9 @@
 # PARTICIPANT_FLAG
 # PARTICIPANT_LABEL
 
-if [ "$(ps -o comm= $PPID)" == "supervisord" ]; then
+if [ "$(awk '{print $1}' /proc/$PPID/comm)" == "supervisord" ]; then
     # Always kill supervisord when this script exits
-    trap 'kill -s SIGTERM $(supervisorctl pid)' EXIT
+    trap 'kill -s SIGTERM $PPID' EXIT
 fi
 
 set -eo pipefail
