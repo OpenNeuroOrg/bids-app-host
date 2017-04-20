@@ -7,8 +7,16 @@
 # PARTICIPANT_FLAG
 # PARTICIPANT_LABEL
 
-riofs -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
-riofs -o "allow_other" $OUTPUT_DIR_BUCKET /outputs
+set -e
+set -o pipefail
+
+if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY"]; then
+    riofs -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
+    riofs -o "allow_other" $OUTPUT_DIR_BUCKET /outputs
+else
+    echo "Error: AWS parameters not passed to this container"
+    exit 1
+fi
 
 # Make sure we've given time for Docker to start
 sleep 5
