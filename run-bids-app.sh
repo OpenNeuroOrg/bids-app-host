@@ -14,6 +14,9 @@ fi
 
 set -eo pipefail
 
+mkdir -p /tmp/bids_dataset
+mkdir -p /tmp/outputs
+
 s3fs -o "use_cache=/tmp/bids_dataset" -o "allow_other" $BIDS_DIR_BUCKET /bids_dataset
 s3fs -o "use_cache=/tmp/outputs" -o "allow_other" $OUTPUT_DIR_BUCKET /outputs
 
