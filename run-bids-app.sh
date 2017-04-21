@@ -13,7 +13,7 @@ elif [ -z "$BIDS_DIR_BUCKET" ]; then
 elif [ -z "$OUTPUT_DIR_BUCKET" ]; then
     echo "Error: Missing env variable OUTPUT_DIR_BUCKET." && exit 1
 elif [ -z "$BIDS_SNAPSHOT_ID" ]; then
-    echo "Error: Missing env variable OUTPUT_DIR_BUCKET." && exit 1
+    echo "Error: Missing env variable BIDS_SNAPSHOT_ID." && exit 1
 fi
 
 mkdir -p /tmp/bids_dataset
