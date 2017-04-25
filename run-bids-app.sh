@@ -14,6 +14,10 @@ elif [ -z "$OUTPUT_DIR_BUCKET" ]; then
     echo "Error: Missing env variable OUTPUT_DIR_BUCKET." && exit 1
 elif [ -z "$BIDS_SNAPSHOT_ID" ]; then
     echo "Error: Missing env variable BIDS_SNAPSHOT_ID." && exit 1
+elif [ -z "$BIDS_GROUP" ]; then
+    echo "Error: Missing env variable BIDS_GROUP." && exit 1
+elif [ -z "$ANALYSIS_ID" ]; then
+    echo "Error: Missing env variable ANALYSIS_ID." && exit 1
 fi
 
 mkdir -p /tmp/bids_dataset
@@ -27,16 +31,9 @@ until [ -S /var/run/docker.sock ]; do
     sleep 0.1
 done
 
-if [ -z "$PARTICIPANT_FLAG" ]; then
-    docker run -i --rm \
-	   -v /bids_dataset/$BIDS_SNAPSHOT_ID:/bids_dataset:ro \
-	   -v /outputs/$BIDS_SNAPSHOT_ID/$ANALYSIS_ID:/outputs \
-	   $BIDS_CONTAINER \
-	   /bids_dataset /outputs group
-else
-    docker run -i --rm \
-	   -v /bids_dataset/$SNAPSHOT_ID:/bids_dataset:ro \
-	   -v /outputs/$SNAPSHOT_ID/$ANALYSIS_ID:/outputs \
-	   $BIDS_CONTAINER \
-	   /bids_dataset /outputs participant --participant_label $PARTICIPANT_LABEL
-fi
+docker run -i --rm \
+   -v /bids_dataset/$BIDS_SNAPSHOT_ID:/bids_dataset:ro \
+   -v /outputs/$BIDS_SNAPSHOT_ID/$ANALYSIS_ID:/outputs \
+   $BIDS_CONTAINER \
+   /bids_dataset /outputs $BIDS_GROUP \
+   "$@"
