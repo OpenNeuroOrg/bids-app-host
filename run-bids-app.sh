@@ -31,9 +31,11 @@ until [ -S /var/run/docker.sock ]; do
     sleep 0.1
 done
 
+ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
+
 docker run -i --rm \
    -v /bids_dataset/"$BIDS_SNAPSHOT_ID":/bids_dataset:ro \
    -v /outputs/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID":/outputs \
    "$BIDS_CONTAINER" \
    /bids_dataset /outputs "$BIDS_ANALYSIS_LEVEL" \
-   "$BIDS_ARGUMENTS"
+   ${ARGUMENTS_ARRAY[@]}
