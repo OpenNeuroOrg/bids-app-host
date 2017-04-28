@@ -28,7 +28,7 @@ s3fs -o "use_cache=/tmp/outputs" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTP
 fi
 
 # Make sure we've given time for Docker to start
-until docker ps; do
+until docker ps > /dev/null; do
     sleep 1
 done
 
