@@ -1,8 +1,6 @@
 #!/bin/bash
-if [ "$(awk '{print $1}' /proc/$PPID/comm)" == "supervisord" ]; then
-    # Always kill supervisord when this script exits
-    trap 'kill -s SIGTERM $PPID' EXIT
-fi
+# Start up the docker service
+nohup sh -c dockerd-entrypoint.sh &
 
 set -eo pipefail
 

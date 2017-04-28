@@ -19,7 +19,6 @@ RUN mkdir /usr/src && \
 
 RUN mkdir /bids_dataset && mkdir /outputs && mkdir /var/log/docker
 
-COPY run-bids-app.sh /run-bids-app.sh
-COPY supervisord.conf /supervisord.conf
+COPY run-bids-app.sh /usr/local/bin/run-bids-app.sh
 
-CMD supervisord -c /supervisord.conf
+ENTRYPOINT /usr/local/bin/run-bids-app.sh
