@@ -34,7 +34,7 @@ done
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
-docker run -i --rm \
+exec docker run -i --rm \
    -v /bids_dataset/"$BIDS_SNAPSHOT_ID":/bids_dataset:ro \
    -v /outputs/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID":/outputs \
    "$BIDS_CONTAINER" \
