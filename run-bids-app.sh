@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start up the docker service
-nohup sh -c dockerd-entrypoint.sh &
+nohup sh -c dockerd.sh &
 
 set -eo pipefail
 
@@ -28,7 +28,7 @@ s3fs -o "use_cache=/tmp/outputs" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTP
 fi
 
 # Make sure we've given time for Docker to start
-until docker ps > /dev/null; do
+until docker ps; do
     sleep 1
 done
 
