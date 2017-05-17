@@ -27,9 +27,11 @@ s3fs -o "use_cache=/tmp/bids_dataset" -o "allow_other" -o "iam_role=auto" "$BIDS
 s3fs -o "use_cache=/tmp/outputs" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTPUT_BUCKET" /outputs
 fi
 
-# Make sure we've given time for Docker to start
-until docker ps; do
-    sleep 1
+# Make sure the host docker instance is running
+ATTEMPTS=0
+until docker ps || [ $ATTEMPTS -eq 12 ]; do
+    sleep 5
+    ATTEMPTS++
 done
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
