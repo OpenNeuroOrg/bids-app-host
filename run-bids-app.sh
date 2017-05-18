@@ -20,8 +20,8 @@ if [ -z "$DEBUG" ]; then
 mkdir -p /tmp/bids_dataset
 mkdir -p /tmp/outputs
 
-s3fs -o "use_cache=/tmp/bids_dataset" -o "allow_other" -o "iam_role=auto" "$BIDS_DATASET_BUCKET" /bids_dataset
-s3fs -o "use_cache=/tmp/outputs" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTPUT_BUCKET" /outputs
+s3fs -o "use_cache=/tmp/bids_dataset" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_DATASET_BUCKET" /bids_dataset
+s3fs -o "use_cache=/tmp/outputs" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTPUT_BUCKET" /outputs
 fi
 
 # Make sure the host docker instance is running
