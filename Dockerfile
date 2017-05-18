@@ -1,6 +1,6 @@
 FROM docker:17.05.0-ce
 
-ENV S3FS_VERSION master
+ENV S3FS_VERSION ae4caa96a002151615f241d87af59b15e933ec47
 
 # Extend dind with the aws sdk
 RUN apk --no-cache update && \
