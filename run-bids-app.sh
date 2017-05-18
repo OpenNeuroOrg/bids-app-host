@@ -1,7 +1,4 @@
 #!/bin/bash
-# Start up the docker service
-nohup sh -c dockerd.sh &
-
 set -eo pipefail
 
 if [ -z "$BIDS_CONTAINER" ]; then

@@ -1,4 +1,4 @@
-FROM docker:17.04.0-dind
+FROM docker:17.05.0-ce
 
 ENV S3FS_VERSION master
 
