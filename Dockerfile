@@ -33,6 +33,5 @@ RUN mkdir /usr/src && \
 RUN mkdir /bids_dataset && mkdir /outputs && mkdir /var/log/docker
 
 COPY run-bids-app.sh /usr/local/bin/run-bids-app.sh
-COPY dockerd.sh /usr/local/bin/dockerd.sh
 
 CMD /usr/local/bin/run-bids-app.sh
