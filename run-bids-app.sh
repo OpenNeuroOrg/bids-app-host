@@ -26,13 +26,22 @@ elif [ -z "$BIDS_ANALYSIS_LEVEL" ]; then
     echo "Error: Missing env variable BIDS_ANALYSIS_LEVEL." && exit 1
 fi
 
-# Disable s3fs for debugging since it relies on EC2 roles
-if [ -z "$DEBUG" ]; then
-    mkdir -p /tmp/bids_dataset
-    mkdir -p /tmp/outputs
-    s3fs -o "use_cache=/tmp/bids_dataset" -o "use_path_request_style" -o "url=https://s3.amazonaws.com" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_DATASET_BUCKET" /bids_dataset
-    s3fs -o "use_cache=/tmp/outputs" -o "use_path_request_style" -o "url=https://s3.amazonaws.com" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTPUT_BUCKET" /outputs
-fi
+AWS_CLI_CONTAINER=infrastructureascode/aws-cli:1.11.89
+pull_and_prune "$AWS_CLI_CONTAINER"
+
+# Create volumes for snapshot/output if they do not already exist
+docker volume create --name "$BIDS_SNAPSHOT_ID"
+docker volume create --name "$BIDS_ANALYSIS_ID"
+
+# Sync those volumes
+docker run -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER aws s3 sync s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /snapshot
+docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /ouput
+
+# On exit, copy the output
+function sync_output {
+    docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER -- aws s3 sync /ouput s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
+}
+trap sync_output EXIT
 
 # Make sure the host docker instance is running
 set +e # Disable -e because we expect docker ps to sometimes fail
@@ -53,9 +62,9 @@ ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 # Pull once, if pull fails, try to prune, if the second pull fails this will exit early
 pull_and_prune "$BIDS_CONTAINER"
 
-exec docker run -i --rm \
-   -v /bids_dataset/"$BIDS_SNAPSHOT_ID":/bids_dataset:ro \
-   -v /outputs/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID":/outputs \
+docker run -i --rm \
+   -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
+   -v "$BIDS_ANALYSIS_ID":/output \
    "$BIDS_CONTAINER" \
-   /bids_dataset /outputs "$BIDS_ANALYSIS_LEVEL" \
+   /snapshot /output "$BIDS_ANALYSIS_LEVEL" \
    ${ARGUMENTS_ARRAY[@]}
