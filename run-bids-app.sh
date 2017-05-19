@@ -17,11 +17,10 @@ fi
 
 # Disable s3fs for debugging since it relies on EC2 roles
 if [ -z "$DEBUG" ]; then
-mkdir -p /tmp/bids_dataset
-mkdir -p /tmp/outputs
-
-s3fs -o "use_cache=/tmp/bids_dataset" -o "use_path_request_style" -o "url=https://s3.amazonaws.com" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_DATASET_BUCKET" /bids_dataset
-s3fs -o "use_cache=/tmp/outputs" -o "use_path_request_style" -o "url=https://s3.amazonaws.com" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTPUT_BUCKET" /outputs
+    mkdir -p /tmp/bids_dataset
+    mkdir -p /tmp/outputs
+    s3fs -o "use_cache=/tmp/bids_dataset" -o "use_path_request_style" -o "url=https://s3.amazonaws.com" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_DATASET_BUCKET" /bids_dataset
+    s3fs -o "use_cache=/tmp/outputs" -o "use_path_request_style" -o "url=https://s3.amazonaws.com" -o "ensure_diskfree=1024" -o "allow_other" -o "iam_role=auto" "$BIDS_OUTPUT_BUCKET" /outputs
 fi
 
 # Make sure the host docker instance is running
