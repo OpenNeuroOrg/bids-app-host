@@ -39,7 +39,7 @@ docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync s3://"$
 
 # On exit, copy the output
 function sync_output {
-    docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER -- aws s3 sync /ouput s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
+    docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync /ouput s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
 }
 trap sync_output EXIT
 
