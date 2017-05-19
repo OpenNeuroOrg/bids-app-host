@@ -29,20 +29,30 @@ fi
 
 AWS_CLI_CONTAINER=infrastructureascode/aws-cli:1.11.89
 pull_and_prune "$AWS_CLI_CONTAINER"
+# Pull once, if pull fails, try to prune
+# if the second pull fails this will exit early
+pull_and_prune "$BIDS_CONTAINER"
+
+# On exit, copy the output
+function sync_output {
+    docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync /output s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
+    # Unlock these volumes
+    docker rm -f "$AWS_BATCH_JOB_ID"-lock
+}
+trap sync_output EXIT
 
 # Create volumes for snapshot/output if they do not already exist
 docker volume create --name "$BIDS_SNAPSHOT_ID"
 docker volume create --name "$BIDS_ANALYSIS_ID"
 
-# Sync those volumes
-docker run -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER aws s3 sync s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /snapshot
-docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output
+# Prevent a race condition where another container deletes these volumes
+# after the syncs but before the main task starts
+# Timeout after ten minutes to prevent infinite jobs
+docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
 
-# On exit, copy the output
-function sync_output {
-    docker run -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync /output s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
-}
-trap sync_output EXIT
+# Sync those volumes
+docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER aws s3 sync s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /snapshot
+docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output
 
 # Make sure the host docker instance is running
 set +e # Disable -e because we expect docker ps to sometimes fail
@@ -60,10 +70,7 @@ fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
-# Pull once, if pull fails, try to prune, if the second pull fails this will exit early
-pull_and_prune "$BIDS_CONTAINER"
-
-docker run -i --rm \
+docker run --rm \
    -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
    -v "$BIDS_ANALYSIS_ID":/output \
    "$BIDS_CONTAINER" \
