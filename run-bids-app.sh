@@ -25,11 +25,18 @@ s3fs -o "use_cache=/tmp/outputs" -o "use_path_request_style" -o "url=https://s3.
 fi
 
 # Make sure the host docker instance is running
-ATTEMPTS=0
-until docker ps || [ $ATTEMPTS -eq 12 ]; do
+set +e # Disable -e because we expect docker ps to sometimes fail
+ATTEMPTS=1
+until docker ps &> /dev/null || [ $ATTEMPTS -eq 13 ]; do
     sleep 5
-    ATTEMPTS++
+    ((ATTEMPTS++))
 done
+set -e
+
+if [ $ATTEMPTS -eq 13 ]; then
+    echo "Failed to find Docker service before timeout"
+    exit 1
+fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
