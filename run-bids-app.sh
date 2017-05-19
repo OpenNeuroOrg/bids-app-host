@@ -1,6 +1,17 @@
 #!/bin/bash
 set -eo pipefail
 
+function pull_and_prune {
+    DISK_USAGE=$(df -P . | awk -F\  'FNR==2{ print $5 }')
+    # Always prune when disk usage is above 80%
+    if [ ${DISK_USAGE%?} -ge 80 ]; then
+        docker system prune --all --force
+        docker pull "$1"
+    else
+        docker pull "$1" || { docker system prune --all --force && docker pull "$1"; }
+    fi
+}
+
 if [ -z "$BIDS_CONTAINER" ]; then
     echo "Error: Missing env variable BIDS_CONTAINER." && exit 1
 elif [ -z "$BIDS_DATASET_BUCKET" ] && [ -z "$DEBUG" ]; then
@@ -40,7 +51,7 @@ fi
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
 # Pull once, if pull fails, try to prune, if the second pull fails this will exit early
-docker pull "$BIDS_CONTAINER" || { docker system prune --all --force && docker pull "$BIDS_CONTAINER"; }
+pull_and_prune "$BIDS_CONTAINER"
 
 exec docker run -i --rm \
    -v /bids_dataset/"$BIDS_SNAPSHOT_ID":/bids_dataset:ro \
