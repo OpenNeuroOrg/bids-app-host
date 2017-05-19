@@ -3,6 +3,7 @@ set -eo pipefail
 
 function pull_and_prune {
     DISK_USAGE=$(df -P . | awk -F\  'FNR==2{ print $5 }')
+    echo "Host disk usage: $DISK_USAGE%"
     # Always prune when disk usage is above 80%
     if [ ${DISK_USAGE%?} -ge 80 ]; then
         docker system prune --all --force
