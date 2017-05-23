@@ -2,14 +2,16 @@
 set -eo pipefail
 
 function pull_and_prune {
-    DISK_USAGE=$(df -P . | awk -F\  'FNR==2{ print $5 }')
-    echo "Host disk usage: $DISK_USAGE"
-    # Always prune when disk usage is above 80%
-    if [ ${DISK_USAGE%?} -ge 80 ]; then
+    DISK_AVAILABLE=$(curl -s --unix-socket /var/run/docker.sock http:/info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
+    echo "Host disk space available: $DISK_AVAILABLE"
+    # Check if there's at least 50 GB available
+    if [[ $DISK_AVAILABLE == *GB ]] && [ ${DISK_AVAILABLE%.*} -ge 50 ]; then
+        # Retry the pull once if it still fails here
+        docker pull "$1" || { docker system prune --all --force && docker pull "$1"; }
+    else
+        # If there wasn't enough disk space, prune and then pull
         docker system prune --all --force
         docker pull "$1"
-    else
-        docker pull "$1" || { docker system prune --all --force && docker pull "$1"; }
     fi
 }
 
