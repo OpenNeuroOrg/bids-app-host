@@ -2,6 +2,8 @@
 set -eo pipefail
 
 function pull_and_prune {
+    docker info
+    curl -s --unix-socket /var/run/docker.sock http:/info
     DISK_AVAILABLE=$(curl -s --unix-socket /var/run/docker.sock http:/info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
     echo "Host disk space available: $DISK_AVAILABLE"
     # Check if there's at least 50 GB available
