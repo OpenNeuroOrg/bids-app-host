@@ -12,7 +12,7 @@ function docker_api_query {
 
 function docker_cleanup {
     # This is more aggressive than the default 3 hour cleanup of the ECS agent
-    if [ $(docker_api_query version | jq -r '.ApiVersion') == '1.24' ]; do
+    if [ $(docker_api_query version | jq -r '.ApiVersion') == '1.24' ]; then
         docker rmi $(docker images -f dangling=true)
         docker volume rm $(docker volume ls -f dangling=true -q)
     else
