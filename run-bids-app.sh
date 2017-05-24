@@ -45,7 +45,7 @@ if [ $ATTEMPTS -eq 13 ]; then
     exit 1
 fi
 
-AWS_CLI_CONTAINER=poldracklab/s4cmd:v2.0.1
+AWS_CLI_CONTAINER=poldracklab/s4cmd:v2.0.1.1
 pull_and_prune "$AWS_CLI_CONTAINER"
 # Pull once, if pull fails, try to prune
 # if the second pull fails this will exit early
