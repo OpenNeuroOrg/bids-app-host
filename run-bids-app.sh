@@ -1,18 +1,36 @@
 #!/bin/bash
 set -eo pipefail
 
+# Minimum supported version is 1.24
+# This script is written based on the 1.29 reference but tested against
+# 1.24 and 1.29
+DOCKER_API_VERSION=1.29
+
+function docker_api_query {
+    curl -s --unix-socket /var/run/docker.sock http:/$DOCKER_API_VERSION/$1
+}
+
+function docker_cleanup {
+    # This is more aggressive than the default 3 hour cleanup of the ECS agent
+    if [ $(docker_api_query version | jq -r '.ApiVersion') == '1.24' ]; do
+        docker rmi $(docker images -f dangling=true)
+        docker volume rm $(docker volume ls -f dangling=true -q)
+    else
+        docker system prune --all --force
+    fi
+}
+
 function pull_and_prune {
-    docker info
-    curl -s --unix-socket /var/run/docker.sock http:/1.29/info
-    DISK_AVAILABLE=$(curl -s --unix-socket /var/run/docker.sock http:/1.29/info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
+    docker_api_query info
+    DISK_AVAILABLE=$(docker_api_query info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
     echo "Host disk space available: $DISK_AVAILABLE"
     # Check if there's at least 50 GB available
     if [[ $DISK_AVAILABLE == *GB ]] && [ ${DISK_AVAILABLE%.*} -ge 50 ]; then
         # Retry the pull once if it still fails here
-        docker pull "$1" || { docker system prune --all --force && docker pull "$1"; }
+        docker pull "$1" || { docker_cleanup && docker pull "$1"; }
     else
         # If there wasn't enough disk space, prune and then pull
-        docker system prune --all --force
+        docker_cleanup
         docker pull "$1"
     fi
 }
