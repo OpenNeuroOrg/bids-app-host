@@ -21,7 +21,6 @@ function docker_cleanup {
 }
 
 function pull_and_prune {
-    docker_api_query info
     DISK_AVAILABLE=$(docker_api_query info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
     echo "Host disk space available: $DISK_AVAILABLE"
     # Check if there's at least 50 GB available
