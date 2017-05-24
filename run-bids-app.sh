@@ -71,7 +71,7 @@ pull_and_prune "$BIDS_CONTAINER"
 
 # On exit, copy the output
 function sync_output {
-    docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER dsync /output s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
+    docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER sync /output s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
     # Unlock these volumes
     docker rm -f "$AWS_BATCH_JOB_ID"-lock
 }
@@ -88,7 +88,7 @@ docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snaps
 
 # Sync those volumes
 docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER dsync s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /snapshot
-docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER dsync --ignore-empty-source s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output
+docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER sync --ignore-empty-source s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
