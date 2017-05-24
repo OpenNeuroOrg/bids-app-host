@@ -24,7 +24,7 @@ function pull_and_prune {
     DISK_AVAILABLE=$(docker_api_query info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
     echo "Host disk space available: $DISK_AVAILABLE"
     # Check if there's at least 50 GB available
-    if [[ $DISK_AVAILABLE == *GB ]] && [ ${DISK_AVAILABLE%.*} -ge 50 ]; then
+    if [[ $DISK_AVAILABLE == *GB ]] && [ $(printf "%.0f\n" "${DISK_AVAILABLE% GB*}") -ge 50 ]; then
         # Retry the pull once if it still fails here
         docker pull "$1" || { docker_cleanup && docker pull "$1"; }
     else
