@@ -10,4 +10,4 @@ This container is meant to encapsulate [BIDS App containers](http://bids-apps.ne
 * BIDS_ARGUMENTS: Optionally any additional parameters required
 
 ## Limitations
-Currently this only functions when running in an EC2 environment with IAM Roles assigned with access to the appropriate S3 buckets or with s3fs credentials injected into the container.
+Currently this only functions when running in an EC2 environment with IAM Roles assigned with access to the appropriate S3 buckets or with s3 credentials injected into the container.
