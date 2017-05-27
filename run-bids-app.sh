@@ -72,7 +72,19 @@ pull_and_prune "$BIDS_CONTAINER"
 
 # On exit, copy the output
 function sync_output {
+    set +e
     docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync /output s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
+    DOCKER_EC=$?
+    if (( $DOCKER_EC == 2 )); then
+        echo "Warning: aws s3 sync output returned status code 2"
+        echo "Some files may not have been copied"
+    else
+        if (( $DOCKER_EC != 0 )); then
+            # Pass any unhandled exit codes back to Batch
+            exit $?
+        fi
+    fis
+    set -e
     # Unlock these volumes
     docker rm -f "$AWS_BATCH_JOB_ID"-lock
 }
