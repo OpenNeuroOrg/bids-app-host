@@ -105,7 +105,7 @@ docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync s3
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
-docker run --rm \
+docker run -it --rm \
    -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
    -v "$BIDS_ANALYSIS_ID":/output \
    "$BIDS_CONTAINER" \
