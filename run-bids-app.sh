@@ -89,7 +89,7 @@ function sync_output {
             # Pass any unhandled exit codes back to Batch
             exit $?
         fi
-    fis
+    fi
     set -e
     # Unlock these volumes
     docker rm -f "$AWS_BATCH_JOB_ID"-lock
