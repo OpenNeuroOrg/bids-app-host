@@ -107,12 +107,10 @@ docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snaps
 
 # Sync those volumes
 set +o pipefail
-docker attach "$BIDS_SNAPSHOT_ID"-sync || \
-  docker run --rm --name "$BIDS_SNAPSHOT_ID"-sync -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER aws s3 sync --only-show-errors s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /snapshot || \
-  sleep 5 && docker attach "$BIDS_SNAPSHOT_ID"-sync
-docker attach "$BIDS_ANALYSIS_ID"-sync || \
-  docker run --rm --name "$BIDS_ANALYSIS_ID"-sync -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync --only-show-errors s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output || \
-  sleep 5 && docker attach "$BIDS_ANALYSIS_ID"-sync
+docker attach /"$BIDS_SNAPSHOT_ID"-sync || \
+  docker run --rm --name "$BIDS_SNAPSHOT_ID"-sync -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER aws s3 sync --only-show-errors s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /snapshot
+docker attach /"$BIDS_ANALYSIS_ID"-sync || \
+  docker run --rm --name "$BIDS_ANALYSIS_ID"-sync -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync --only-show-errors s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output
 
 set -o pipefail
 
