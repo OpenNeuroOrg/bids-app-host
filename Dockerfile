@@ -1,6 +1,6 @@
 FROM docker:17.05.0-ce
 
-RUN apk add --no-cache --update bash jq curl && \
+RUN apk add --no-cache --update bash jq curl util-linux && \
   mkdir /snapshot && \
   mkdir /output
 
