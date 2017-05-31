@@ -121,4 +121,4 @@ mapfile BIDS_APP_COMMAND <<EOF
 EOF
 
 # Wrap with script so we have a PTY available regardless of parent shell
-script -q -c "$BIDS_APP_COMMAND" /dev/null
+script -e -q -c "$BIDS_APP_COMMAND" /dev/null
