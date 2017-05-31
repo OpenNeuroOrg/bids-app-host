@@ -111,9 +111,14 @@ docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync --
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
-docker run --rm \
+read -r -d '' BIDS_DOCKER_CMD << EOM
+docker run -it --rm \
    -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
    -v "$BIDS_ANALYSIS_ID":/output \
    "$BIDS_CONTAINER" \
    /snapshot /output "$BIDS_ANALYSIS_LEVEL" \
    ${ARGUMENTS_ARRAY[@]}
+EOM
+
+# Wrap with script so we have a PTY available regardless of parent shell
+script -q -e -c $BIDS_DOCKER_CMD /dev/stdout
