@@ -107,12 +107,11 @@ docker volume create --name "$BIDS_ANALYSIS_ID"
 # Timeout after ten minutes to prevent infinite jobs
 docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
 
-
 # Sync those volumes
 SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
-docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock -c $SNAPSHOT_COMMAND
-docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER flock /output/lock -c $OUTPUT_COMMAND
+docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
+docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
