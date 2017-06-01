@@ -97,7 +97,9 @@ function sync_output {
 trap sync_output EXIT
 
 # Create volumes for snapshot/output if they do not already exist
+echo "Creating snapshot volume:"
 docker volume create --name "$BIDS_SNAPSHOT_ID"
+echo "Creating output volume:"
 docker volume create --name "$BIDS_ANALYSIS_ID"
 
 # Prevent a race condition where another container deletes these volumes
