@@ -115,7 +115,7 @@ if [ $(docker inspect -f {{.State.Running}} $SNAPSHOT_NAME || echo 'false') == '
 else
     echo "Waiting for sibling container $SNAPSHOT_NAME"
     until [ $(docker inspect -f {{.State.Running}} $SNAPSHOT_NAME) == 'false' ]; do
-        sleep 1
+        sleep 5
     done
 fi
 if [ $(docker inspect -f {{.State.Running}} $OUTPUT_NAME || echo 'false') == 'false' ]; then
@@ -123,7 +123,7 @@ if [ $(docker inspect -f {{.State.Running}} $OUTPUT_NAME || echo 'false') == 'fa
 else
     echo "Waiting for sibling container $OUTPUT_NAME"
     until [ $(docker inspect -f {{.State.Running}} $OUTPUT_NAME) == 'false' ]; do
-        sleep 1
+        sleep 5
     done
 fi
 set -o pipefail
