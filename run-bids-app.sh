@@ -109,24 +109,24 @@ docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snaps
 SNAPSHOT_NAME="$BIDS_SNAPSHOT_ID"-sync
 OUTPUT_NAME="$BIDS_ANALYSIS_ID"-sync
 # We have to check if another container is running the sync already on this ECS host
-set +e
+set +o pipefail
 if [ $(docker inspect -f {{.State.Running}} $SNAPSHOT_NAME || echo 'false') == 'false' ]; then
     docker run --rm --name $SNAPSHOT_NAME -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER aws s3 sync --only-show-errors s3://"$BIDS_DATASET_BUCKET"/"$BIDS_SNAPSHOT_ID" /
 else
-    echo "Waiting for sibling container to sync $SNAPSHOT_NAME"
-    until [ $(docker inspect -f {{.State.Running}} $SNAPSHOT_NAME) == 'false' ]; do
+    echo "Waiting for sibling container $SNAPSHOT_NAME"
+    until [ $(docker inspect -f {{.State.Running}} $SNAPSHOT_NAME || echo 'false') == 'false' ]; do
         sleep 1
     done
 fi
 if [ $(docker inspect -f {{.State.Running}} $OUTPUT_NAME || echo 'false') == 'false' ]; then
     docker run --rm --name $OUTPUT_NAME -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync --only-show-errors s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID" /output
 else
-    echo "Waiting for sibling container to sync $OUTPUT_NAME"
-    until [ $(docker inspect -f {{.State.Running}} $OUTPUT_NAME || 'false') == 'false' ]; do
+    echo "Waiting for sibling container $OUTPUT_NAME"
+    until [ $(docker inspect -f {{.State.Running}} $OUTPUT_NAME || echo 'false') == 'false' ]; do
         sleep 1
     done
 fi
-set -e
+set -o pipefail
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
 mapfile BIDS_APP_COMMAND <<EOF
