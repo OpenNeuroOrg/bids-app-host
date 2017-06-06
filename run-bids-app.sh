@@ -24,7 +24,7 @@ function docker_cleanup {
 
 function pull_and_prune {
     IMAGE_SPACE_AVAILABLE=$(docker_api_query info | jq -r '.DriverStatus[] | select(.[0] | match("Data Space Available")) | .[1]')
-    VOLUME_SPACE_AVAILABLE=$(df -P /var/run/docker.sock | awk -F\  'FNR==2{ print $5 }')
+    VOLUME_SPACE_USED=$(df -P /var/run/docker.sock | awk -F\  'FNR==2{ print $5 }')
     echo "Host image storage available: $IMAGE_SPACE_AVAILABLE"
     echo "Host volume storage used: $VOLUME_SPACE_USED"
     # Check if there's at least 10 GB of image storage and 20% of volume storage free
