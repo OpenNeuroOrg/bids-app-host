@@ -28,7 +28,7 @@ function pull_and_prune {
     echo "Host image storage available: $IMAGE_SPACE_AVAILABLE"
     echo "Host volume storage available: $VOLUME_SPACE_AVAILABLE"
     # Check if there's at least 10 GB of image storage and 20% of volume storage free
-    if [[ $IMAGE_SPACE_AVAILABLE == *GB ]] && [ $(printf "%.0f\n" "${IMAGE_SPACE_AVAILABLE% GB*}") -ge 10 ] && [ ${DISK_USAGE%?} -le 80 ]; then
+    if [[ $IMAGE_SPACE_AVAILABLE == *GB ]] && [ $(printf "%.0f\n" "${IMAGE_SPACE_AVAILABLE% GB*}") -ge 10 ] && [ ${VOLUME_SPACE_AVAILABLE%?} -le 80 ]; then
         # Retry the pull once if it still fails here
         docker pull "$1" || { docker_cleanup && docker pull "$1"; }
     else
