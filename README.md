@@ -1,4 +1,4 @@
-This container is meant to encapsulate [BIDS App containers](http://bids-apps.neuroimaging.io/) for execution with AWS roles and S3 inputs/outputs.
+This container is meant to encapsulate [BIDS App containers](http://bids-apps.neuroimaging.io/) for execution with AWS roles and S3 inputs/outputs. It must be run with the options `--privileged -v /var/run/docker.sock:/var/run/docker.sock` to start containers on the host.
 
 ## Required environment variables/configuration:
 * BIDS_ANALYSIS_ID: A unique key for a combination of dataset and parameters
