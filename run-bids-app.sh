@@ -75,7 +75,7 @@ pull_and_prune "$BIDS_CONTAINER"
 # On exit, copy the output
 function sync_output {
     set +e
-    docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER aws s3 sync --only-show-errors /output/data s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
+    docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER aws s3 sync --only-show-errors /output/data s3://"$BIDS_OUTPUT_BUCKET"/"$BIDS_SNAPSHOT_ID"/"$BIDS_ANALYSIS_ID"
     DOCKER_EC=$?
     if (( $DOCKER_EC == 2 )); then
         echo "Warning: aws s3 sync output returned status code 2"
@@ -96,22 +96,22 @@ trap sync_output EXIT
 echo "Creating snapshot volume:"
 docker volume create --name "$BIDS_SNAPSHOT_ID"
 echo "Creating output volume:"
-docker volume create --name "$BIDS_ANALYSIS_ID"
+docker volume create --name "$AWS_BATCH_JOB_ID"
 
 # Prevent a race condition where another container deletes these volumes
 # after the syncs but before the main task starts
 # Timeout after ten minutes to prevent infinite jobs
-docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
+docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
 
 # Sync those volumes
 SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
 if [ -z "$AWS_ACCESS_KEY_ID" ]; then
     docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
-    docker run --rm -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
+    docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
 else
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
-    docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_ANALYSIS_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
+    docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
 fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
@@ -119,7 +119,7 @@ ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 mapfile BIDS_APP_COMMAND <<EOF
     docker run -it --rm \
        -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
-       -v "$BIDS_ANALYSIS_ID":/output \
+       -v "$AWS_BATCH_JOB_ID":/output \
        "$BIDS_CONTAINER" \
        /snapshot/data /output/data "$BIDS_ANALYSIS_LEVEL" \
        ${ARGUMENTS_ARRAY[@]}
