@@ -86,9 +86,9 @@ function sync_output {
             exit $?
         fi
     fi
-    set -e
     # Unlock these volumes
-    docker rm -f "$AWS_BATCH_JOB_ID"-lock
+    docker rm -f "$AWS_BATCH_JOB_ID"-lock || echo "No lock found for ${AWS_BATCH_JOB_ID}"
+    set -e
 }
 trap sync_output EXIT
 
