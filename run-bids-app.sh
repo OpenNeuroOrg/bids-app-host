@@ -44,6 +44,8 @@ elif [ -z "$BIDS_DATASET_BUCKET" ] && [ -z "$DEBUG" ]; then
     echo "Error: Missing env variable BIDS_DATASET_BUCKET." && exit 1
 elif [ -z "$BIDS_OUTPUT_BUCKET" ] && [ -z "$DEBUG" ]; then
     echo "Error: Missing env variable BIDS_OUTPUT_BUCKET." && exit 1
+elif [ -z "$BIDS_INPUT_BUCKET" ] && [ -z "$DEBUG" ]; then
+    echo "Error: Missing env variable BIDS_INTPUT_BUCKET." && exit 1
 elif [ -z "$BIDS_SNAPSHOT_ID" ]; then
     echo "Error: Missing env variable BIDS_SNAPSHOT_ID." && exit 1
 elif [ -z "$BIDS_ANALYSIS_ID" ]; then
@@ -92,11 +94,13 @@ function sync_output {
 }
 trap sync_output EXIT
 
-# Create volumes for snapshot/output if they do not already exist
+# Create volumes for snapshot/output/input if they do not already exist
 echo "Creating snapshot volume:"
 docker volume create --name "$BIDS_SNAPSHOT_ID"
 echo "Creating output volume:"
 docker volume create --name "$AWS_BATCH_JOB_ID"
+echo "Creating input volume:"
+docker volume create --name "$AWS_INPUT_BUCKET"
 
 # Prevent a race condition where another container deletes these volumes
 # after the syncs but before the main task starts
@@ -106,12 +110,15 @@ docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snaps
 # Sync those volumes
 SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
+INPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_INPUT_BUCKET} /input/data"
 if [ -z "$AWS_ACCESS_KEY_ID" ]; then
     docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
+    docker run --rm -v "$AWS_INPUT_BUCKET":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
 else
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
+    docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_INPUT_BUCKET":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
 fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
@@ -120,6 +127,7 @@ mapfile BIDS_APP_COMMAND <<EOF
     docker run -it --rm \
        -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
        -v "$AWS_BATCH_JOB_ID":/output \
+       -v "$AWS_INPUT_BUCKET":/inputt:ro \
        "$BIDS_CONTAINER" \
        /snapshot/data /output/data "$BIDS_ANALYSIS_LEVEL" \
        ${ARGUMENTS_ARRAY[@]}
