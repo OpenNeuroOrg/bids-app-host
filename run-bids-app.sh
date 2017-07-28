@@ -111,7 +111,7 @@ if [ "$INPUT_HASH_LIST" ]; then
     for hash in "${INPUT_BASH_ARRAY[@]}"
     do
         HASH_STRING+="$hash"
-        INCLUDE_STRING+="--include \"$hash\" "
+        INCLUDE_STRING+="--include \"*${hash}*\" "
     done
     # Create input volume
     echo "Creating input volume:"
