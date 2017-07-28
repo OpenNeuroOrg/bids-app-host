@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -eo pipefail -x
 
 # Minimum supported version is 1.24
 # This script is written based on the 1.29 reference but tested against
@@ -111,13 +111,14 @@ if [ "$INPUT_HASH_LIST" ]; then
     for hash in "${INPUT_BASH_ARRAY[@]}"
     do
         HASH_STRING+="$hash"
-        INCLUDE_STRING+="--include \"*${hash}*\" "
+        INCLUDE_STRING+="--include \"${hash}\" "
     done
     # Create input volume
     echo "Creating input volume:"
     docker volume create --name "${BIDS_INPUT_BUCKET}_${HASH_STRING}"
     # Input command to copy input files from s3
-    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET} /input/data --recursive  --exclude \"*\" ${INCLUDE_STRING}"
+    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET} /input/data --recursive --exclude \"*\" ${INCLUDE_STRING}"
+    echo "$INPUT_COMMAND"
 fi
 
 # Prevent a race condition where another container deletes these volumes
