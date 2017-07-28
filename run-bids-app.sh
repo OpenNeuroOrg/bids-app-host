@@ -111,20 +111,23 @@ if [ "$INPUT_HASH_LIST" ]; then
     for hash in "${INPUT_BASH_ARRAY[@]}"
     do
         HASH_STRING+="$hash"
-        INCLUDE_STRING+="--include \"$hashes\" "
+        INCLUDE_STRING+="--include \"$hash\" "
     done
     # Create input volume
     echo "Creating input volume:"
-    docker volume create --name "$BIDS_INPUT_BUCKET_$HASH_STRING"
+    docker volume create --name "${BIDS_INPUT_BUCKET}_${HASH_STRING}"
     # Input command to copy input files from s3
-    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET} --exclude \"*\" ${INCLUDE_STRING} /input/data"
+    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET} /input/data --recursive  --exclude \"*\" ${INCLUDE_STRING}"
 fi
 
 # Prevent a race condition where another container deletes these volumes
 # after the syncs but before the main task starts
 # Timeout after ten minutes to prevent infinite jobs
-docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output -v "$BIDS_INPUT_BUCKET_$HASH_STRING":/input $AWS_CLI_CONTAINER sh -c 'sleep 600'
-
+if [ "$INPUT_COMMAND" ]; then
+    docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output -v "$BIDS_INPUT_BUCKET_$HASH_STRING":/input $AWS_CLI_CONTAINER sh -c 'sleep 600'
+else
+    docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
+fi
 # Sync those volumes
 SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
@@ -132,26 +135,37 @@ if [ -z "$AWS_ACCESS_KEY_ID" ]; then
     docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
     if [ "$INPUT_COMMAND" ]; then
-        docker run --rm -v "$BIDS_INPUT_BUCKET":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
+        docker run --rm -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
     fi
 else
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
     if [ "$INPUT_COMMAND" ]; then
-        docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_INPUT_BUCKET_$HASH_STRING":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
+        docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
     fi
 fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
+if [ "$INPUT_COMMAND" ]; then
+    COMMAND_TO_RUN="docker run -it --rm \
+           -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
+           -v \"$AWS_BATCH_JOB_ID\":/output \
+           -v \"${BIDS_INPUT_BUCKET}_${HASH_STRING}\":/input:ro \
+           \"$BIDS_CONTAINER\" \
+           /snapshot/data /output/data \"$BIDS_ANALYSIS_LEVEL\" \
+           ${ARGUMENTS_ARRAY[@]}"
+else
+    COMMAND_TO_RUN="docker run -it --rm \
+           -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
+           -v \"$AWS_BATCH_JOB_ID\":/output \
+           \"$BIDS_CONTAINER\" \
+           /snapshot/data /output/data \"$BIDS_ANALYSIS_LEVEL\" \
+           ${ARGUMENTS_ARRAY[@]}"
+fi
+
 mapfile BIDS_APP_COMMAND <<EOF
-    docker run -it --rm \
-       -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
-       -v "$AWS_BATCH_JOB_ID":/output \
-       -v "$BIDS_INPUT_BUCKET_BUCKET_$HASH_STRING":/input:ro \
-       "$BIDS_CONTAINER" \
-       /snapshot/data /output/data "$BIDS_ANALYSIS_LEVEL" \
-       ${ARGUMENTS_ARRAY[@]}
+    $COMMAND_TO_RUN
 EOF
 
 # Wrap with script so we have a PTY available regardless of parent shell
