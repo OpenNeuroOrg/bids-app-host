@@ -101,23 +101,21 @@ echo "Creating output volume:"
 docker volume create --name "$AWS_BATCH_JOB_ID"
 
 # Check for file input hash "array" string
+# right now we are only supporting a single file
+# left this is an array so we can support multi file in the future
 if [ "$INPUT_HASH_LIST" ]; then
     echo "Input file hash array found"
     # Convert hash list into a bash array
     INPUT_BASH_ARRAY=(`echo ${INPUT_HASH_LIST}`)
-    # Concatenate all the hashes into one string to combine with input bucket to make a unique volume name
-    HASH_STRING=""
-    INCLUDE_STRING=""
     for hash in "${INPUT_BASH_ARRAY[@]}"
     do
         HASH_STRING+="$hash"
-        INCLUDE_STRING+="--include \"*${hash}*\""
     done
     # Create input volume
     echo "Creating input volume:"
     docker volume create --name "${BIDS_INPUT_BUCKET}_${HASH_STRING}"
-    # Input command to copy input files from s3
-    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET}/ /input/data/ --recursive --exclude '*' ${INCLUDE_STRING}"
+    # Input command to copy input files from s3. Again only single file support right now.  Hence ${INPUT_BASH_ARRAY[0]}
+    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET}/${INPUT_BASH_ARRAY[0]} /input/data --recursive"
     echo "$INPUT_COMMAND"
 fi
 
@@ -141,7 +139,7 @@ if [ -z "$AWS_ACCESS_KEY_ID" ]; then
 else
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
-    if [ "$INPUT_COMMAND" ]; thenx
+    if [ "$INPUT_COMMAND" ]; then
         docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
     fi
 fi
