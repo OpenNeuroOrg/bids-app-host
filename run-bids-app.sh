@@ -117,7 +117,7 @@ if [ "$INPUT_HASH_LIST" ]; then
     echo "Creating input volume:"
     docker volume create --name "${BIDS_INPUT_BUCKET}_${HASH_STRING}"
     # Input command to copy input files from s3
-    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET}/ /input/data --recursive --exclude \"*\" ${INCLUDE_STRING}"
+    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET}/ /input/data/ --recursive --exclude '*' ${INCLUDE_STRING}"
     echo "$INPUT_COMMAND"
 fi
 
@@ -136,13 +136,13 @@ if [ -z "$AWS_ACCESS_KEY_ID" ]; then
     docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
     if [ "$INPUT_COMMAND" ]; then
-        docker run --rm -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock eval $INPUT_COMMAND
+        docker run --rm -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
     fi
 else
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
-    if [ "$INPUT_COMMAND" ]; then
-        docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock eval $INPUT_COMMAND
+    if [ "$INPUT_COMMAND" ]; thenx
+        docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
     fi
 fi
 
