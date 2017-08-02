@@ -106,10 +106,10 @@ docker volume create --name "$AWS_BATCH_JOB_ID"
 if [ "$INPUT_HASH_LIST" ]; then
     echo "Input file hash array found"
     # Convert hash list into a bash array
-    INPUT_BASH_ARRAY=( "${INPUT_HASH_LIST}" )
+    INPUT_BASH_ARRAY=( `echo ${INPUT_HASH_LIST}` )
     for hash in "${INPUT_BASH_ARRAY[@]}"
     do
-        HASH_INCLUDES+="--include \*$hash\*"
+        HASH_INCLUDES+="--include *$hash* "
         HASH_STRING+="$hash"
     done
     # Create input volume
