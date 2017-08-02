@@ -106,23 +106,23 @@ docker volume create --name "$AWS_BATCH_JOB_ID"
 if [ "$INPUT_HASH_LIST" ]; then
     echo "Input file hash array found"
     # Convert hash list into a bash array
-    INPUT_BASH_ARRAY=(`echo ${INPUT_HASH_LIST}`)
+    INPUT_BASH_ARRAY=( "${INPUT_HASH_LIST}" )
     for hash in "${INPUT_BASH_ARRAY[@]}"
     do
+        HASH_INCLUDES+="--include \*$hash\*"
         HASH_STRING+="$hash"
     done
     # Create input volume
     echo "Creating input volume:"
     docker volume create --name "${BIDS_INPUT_BUCKET}_${HASH_STRING}"
     # Input command to copy input files from s3. Again only single file support right now.  Hence ${INPUT_BASH_ARRAY[0]}
-    INPUT_COMMAND="aws s3 cp --only-show-errors s3://${BIDS_INPUT_BUCKET}/${INPUT_BASH_ARRAY[0]} /input/data --recursive"
-    echo "$INPUT_COMMAND"
+    docker run --rm -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock aws s3 cp s3://${BIDS_INPUT_BUCKET}/ /input/data --recursive --exclude \* $HASH_INCLUDES
 fi
 
 # Prevent a race condition where another container deletes these volumes
 # after the syncs but before the main task starts
 # Timeout after ten minutes to prevent infinite jobs
-if [ "$INPUT_COMMAND" ]; then
+if [ "$INPUT_HASH_LIST" ]; then
     docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output -v "$BIDS_INPUT_BUCKET_$HASH_STRING":/input $AWS_CLI_CONTAINER sh -c 'sleep 600'
 else
     docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
@@ -133,20 +133,14 @@ OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS
 if [ -z "$AWS_ACCESS_KEY_ID" ]; then
     docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
-    if [ "$INPUT_COMMAND" ]; then
-        docker run --rm -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
-    fi
 else
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
-    if [ "$INPUT_COMMAND" ]; then
-        docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock $INPUT_COMMAND
-    fi
 fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
-if [ "$INPUT_COMMAND" ]; then
+if [ "$INPUT_HASH_LIST" ]; then
     COMMAND_TO_RUN="docker run -it --rm \
            -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
            -v \"$AWS_BATCH_JOB_ID\":/output \
