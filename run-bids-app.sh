@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -eo pipefail -x
 
 # Minimum supported version is 1.24
 # This script is written based on the 1.29 reference but tested against
@@ -44,6 +44,8 @@ elif [ -z "$BIDS_DATASET_BUCKET" ] && [ -z "$DEBUG" ]; then
     echo "Error: Missing env variable BIDS_DATASET_BUCKET." && exit 1
 elif [ -z "$BIDS_OUTPUT_BUCKET" ] && [ -z "$DEBUG" ]; then
     echo "Error: Missing env variable BIDS_OUTPUT_BUCKET." && exit 1
+elif [ -z "$BIDS_INPUT_BUCKET" ] && [ -z "$DEBUG" ]; then
+    echo "Error: Missing env variable BIDS_INPUT_BUCKET." && exit 1
 elif [ -z "$BIDS_SNAPSHOT_ID" ]; then
     echo "Error: Missing env variable BIDS_SNAPSHOT_ID." && exit 1
 elif [ -z "$BIDS_ANALYSIS_ID" ]; then
@@ -98,11 +100,33 @@ docker volume create --name "$BIDS_SNAPSHOT_ID"
 echo "Creating output volume:"
 docker volume create --name "$AWS_BATCH_JOB_ID"
 
+# Check for file input hash "array" string
+# right now we are only supporting a single file
+# left this is an array so we can support multi file in the future
+if [ "$INPUT_HASH_LIST" ]; then
+    echo "Input file hash array found"
+    # Convert hash list into a bash array
+    INPUT_BASH_ARRAY=( `echo ${INPUT_HASH_LIST}` )
+    for hash in "${INPUT_BASH_ARRAY[@]}"
+    do
+        HASH_INCLUDES+="--include *$hash* "
+        HASH_STRING+="$hash"
+    done
+    # Create input volume
+    echo "Creating input volume:"
+    docker volume create --name "${BIDS_INPUT_BUCKET}_${HASH_STRING}"
+    # Input command to copy input files from s3. Again only single file support right now.  Hence ${INPUT_BASH_ARRAY[0]}
+    docker run --rm -v "${BIDS_INPUT_BUCKET}_${HASH_STRING}":/input $AWS_CLI_CONTAINER flock /input/lock aws s3 cp s3://${BIDS_INPUT_BUCKET}/ /input/data --recursive --exclude \* $HASH_INCLUDES
+fi
+
 # Prevent a race condition where another container deletes these volumes
 # after the syncs but before the main task starts
 # Timeout after ten minutes to prevent infinite jobs
-docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
-
+if [ "$INPUT_HASH_LIST" ]; then
+    docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output -v "$BIDS_INPUT_BUCKET_$HASH_STRING":/input $AWS_CLI_CONTAINER sh -c 'sleep 600'
+else
+    docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
+fi
 # Sync those volumes
 SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
@@ -116,13 +140,25 @@ fi
 
 ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
+if [ "$INPUT_HASH_LIST" ]; then
+    COMMAND_TO_RUN="docker run -it --rm \
+           -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
+           -v \"$AWS_BATCH_JOB_ID\":/output \
+           -v \"${BIDS_INPUT_BUCKET}_${HASH_STRING}\":/input:ro \
+           \"$BIDS_CONTAINER\" \
+           /snapshot/data /output/data \"$BIDS_ANALYSIS_LEVEL\" \
+           ${ARGUMENTS_ARRAY[@]}"
+else
+    COMMAND_TO_RUN="docker run -it --rm \
+           -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
+           -v \"$AWS_BATCH_JOB_ID\":/output \
+           \"$BIDS_CONTAINER\" \
+           /snapshot/data /output/data \"$BIDS_ANALYSIS_LEVEL\" \
+           ${ARGUMENTS_ARRAY[@]}"
+fi
+
 mapfile BIDS_APP_COMMAND <<EOF
-    docker run -it --rm \
-       -v "$BIDS_SNAPSHOT_ID":/snapshot:ro \
-       -v "$AWS_BATCH_JOB_ID":/output \
-       "$BIDS_CONTAINER" \
-       /snapshot/data /output/data "$BIDS_ANALYSIS_LEVEL" \
-       ${ARGUMENTS_ARRAY[@]}
+    $COMMAND_TO_RUN
 EOF
 
 # Wrap with script so we have a PTY available regardless of parent shell
