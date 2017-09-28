@@ -1,7 +1,7 @@
 #!/bin/bash
-set -eo pipefail -x
+set -eo pipefail
 
-echo "Starting openneuro/bids-app-host:0.7.9"
+echo "Starting openneuro/bids-app-host:0.7.10"
 
 # Minimum supported version is 1.24
 # This script is written based on the 1.29 reference but tested against
