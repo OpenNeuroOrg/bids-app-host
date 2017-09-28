@@ -30,7 +30,9 @@ function pull_and_prune {
     # Check if there's at least 20 GB of image storage and 40% of volume storage free
     if [[ $IMAGE_SPACE_AVAILABLE == *GB ]] && [ $(printf "%.0f\n" "${IMAGE_SPACE_AVAILABLE% GB*}") -ge 20 ] && [ ${VOLUME_SPACE_USED%?} -le 60 ]; then
         # Retry the pull once if it still fails here
+	set +eo pipefail
         docker pull "$1" || { docker_cleanup && docker pull "$1"; }
+	set -eo pipefail
     else
         # If there wasn't enough disk space, prune and then pull
         docker_cleanup
