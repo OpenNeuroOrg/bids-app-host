@@ -14,9 +14,11 @@ function docker_cleanup {
     if [ -z "DISABLE_PRUNE" ]; then
         # This is more aggressive than the default 3 hour cleanup of the ECS agent
         if [ $(docker_api_query version | jq -r '.ApiVersion') == '1.24' ]; then
+            echo "Freeing space for app..."
             docker rmi $(docker images -f dangling=true)
             docker volume rm $(docker volume ls -f dangling=true -q)
         else
+            echo "Freeing space for app with 'docker system prune'..."
             docker system prune --all --force
         fi
     fi
