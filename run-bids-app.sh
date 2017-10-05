@@ -3,6 +3,8 @@ set -eo pipefail
 
 echo "Starting openneuro/bids-app-host:0.7.10"
 
+docker info
+
 # Minimum supported version is 1.24
 # This script is written based on the 1.29 reference but tested against
 # 1.24 and 1.29
