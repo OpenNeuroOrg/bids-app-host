@@ -31,17 +31,12 @@ function pull_and_prune {
     VOLUME_SPACE_USED=$(df -P /var/run/docker.sock | awk -F\  'FNR==2{ print $5 }')
     echo "Host image storage available: $IMAGE_SPACE_AVAILABLE"
     echo "Host volume storage used: $VOLUME_SPACE_USED"
-    # Check if there's at least 20 GB of image storage and 40% of volume storage free
-    if [[ $IMAGE_SPACE_AVAILABLE == *GB ]] && [ $(printf "%.0f\n" "${IMAGE_SPACE_AVAILABLE% GB*}") -ge 20 ] && [ ${VOLUME_SPACE_USED%?} -le 60 ]; then
-        # Retry the pull once if it still fails here
-	set +eo pipefail
-        docker pull "$1" || { docker_cleanup && docker pull "$1"; }
-	set -eo pipefail
-    else
-        # If there wasn't enough disk space, prune and then pull
-        docker_cleanup
-        docker pull "$1"
-    fi
+    # Always clean up images at container start
+    docker_cleanup
+    set +eo pipefail
+    # Allow for one retry if the first pull fails
+    docker pull "$1" || { docker_cleanup && docker pull "$1"; }
+    set -eo pipefail
 }
 
 if [ -z "$BIDS_CONTAINER" ]; then
