@@ -164,5 +164,8 @@ mapfile BIDS_APP_COMMAND <<EOF
     $COMMAND_TO_RUN
 EOF
 
+echo "Running $BIDS_CONTAINER"
+echo "_______________________________________________________"
+
 # Wrap with script so we have a PTY available regardless of parent shell
 script -f -e -q -c "$BIDS_APP_COMMAND" /dev/null
