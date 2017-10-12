@@ -5,6 +5,9 @@ echo "Starting openneuro/bids-app-host:0.7.11"
 
 docker info
 
+# Debugging environment setup
+env
+
 # Minimum supported version is 1.24
 # This script is written based on the 1.29 reference but tested against
 # 1.24 and 1.29
