@@ -98,7 +98,9 @@ function sync_output {
     # Cleanup at end of job
     docker_cleanup
 }
-trap sync_output EXIT
+
+# On EXIT or SIGTERM, sync results
+trap sync_output EXIT SIGTERM
 
 # Create volumes for snapshot/output if they do not already exist
 echo "Creating snapshot volume:"
