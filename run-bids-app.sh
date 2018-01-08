@@ -5,6 +5,9 @@ echo "Starting openneuro/bids-app-host:0.8.0"
 
 docker info
 
+# Get cgroup limit for host container, reserve 64MB and limit the BIDS container to this
+BIDS_APP_MEMORY_LIMIT=$(( $(cat /sys/fs/cgroup/memory/memory.limit_in_bytes) - 67108864 ))
+
 # Minimum supported version is 1.24
 # This script is written based on the 1.29 reference but tested against
 # 1.24 and 1.29
@@ -164,6 +167,7 @@ ARGUMENTS_ARRAY=( "$BIDS_ARGUMENTS" )
 
 if [ "$INPUT_HASH_LIST" ]; then
     COMMAND_TO_RUN="docker run -it --rm \
+           -m \"$BIDS_APP_MEMORY_LIMIT\" \
            -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
            -v \"$AWS_BATCH_JOB_ID\":/output \
            -v \"${BIDS_INPUT_BUCKET}_${HASH_STRING}\":/input:ro \
@@ -172,6 +176,7 @@ if [ "$INPUT_HASH_LIST" ]; then
            ${ARGUMENTS_ARRAY[@]}"
 else
     COMMAND_TO_RUN="docker run -it --rm \
+           -m \"$BIDS_APP_MEMORY_LIMIT\" \
            -v \"$BIDS_SNAPSHOT_ID\":/snapshot:ro \
            -v \"$AWS_BATCH_JOB_ID\":/output \
            \"$BIDS_CONTAINER\" \
