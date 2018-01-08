@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-echo "Starting openneuro/bids-app-host:0.7.11"
+echo "Starting openneuro/bids-app-host:0.8.0"
 
 docker info
 
@@ -136,6 +136,20 @@ fi
 # Sync those volumes
 SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
+
+# Only copy the participants needed for this analysis
+if [ "$BIDS_ANALYSIS_LEVEL" -eq "participant" ]; then
+    OPTION="${BIDS_ARGUMENTS##*--participant_label }"
+    PARTICIPANTS="${OPTION%% --*}"
+    EXCLUDE="${BIDS_SNAPSHOT_ID}/sub*/*"
+    INCLUDES=""
+    for PART in ${PARTICIPANTS[@]}
+    do
+        INCLUDES+="--include ${BIDS_SNAPSHOT_ID}/sub-${PART}/* "
+    done
+    SNAPSHOT_COMMAND="aws s3 sync --only-show-errors ${EXCLUDE} ${INCLUDES} s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
+fi
+
 if [ -z "$AWS_ACCESS_KEY_ID" ]; then
     docker run --rm -v "$BIDS_SNAPSHOT_ID":/snapshot $AWS_CLI_CONTAINER flock /snapshot/lock $SNAPSHOT_COMMAND
     docker run --rm -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER flock /output/lock $OUTPUT_COMMAND
