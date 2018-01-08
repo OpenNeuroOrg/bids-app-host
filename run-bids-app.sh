@@ -141,7 +141,7 @@ OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS
 if [ "$BIDS_ANALYSIS_LEVEL" -eq "participant" ]; then
     OPTION="${BIDS_ARGUMENTS##*--participant_label }"
     PARTICIPANTS="${OPTION%% --*}"
-    EXCLUDE="${BIDS_SNAPSHOT_ID}/sub*/*"
+    EXCLUDE="${BIDS_SNAPSHOT_ID}/sub-*"
     INCLUDES=""
     for PART in ${PARTICIPANTS[@]}
     do
