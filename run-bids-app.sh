@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-echo "Starting openneuro/bids-app-host:0.8.0"
+echo "Starting openneuro/bids-app-host:0.8.1"
 
 docker info
 
