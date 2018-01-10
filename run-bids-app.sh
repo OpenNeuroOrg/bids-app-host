@@ -143,7 +143,7 @@ SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${B
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
 
 # Only copy the participants needed for this analysis
-if [ "$BIDS_ANALYSIS_LEVEL" -eq "participant" ]; then
+if [ "$BIDS_ANALYSIS_LEVEL" = "participant" ]; then
     OPTION="${BIDS_ARGUMENTS##*--participant_label }"
     PARTICIPANTS="${OPTION%% --*}"
     EXCLUDE="${BIDS_SNAPSHOT_ID}/sub-*"
