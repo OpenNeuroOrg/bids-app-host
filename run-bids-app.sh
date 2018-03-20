@@ -146,13 +146,13 @@ OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS
 if [ "$BIDS_ANALYSIS_LEVEL" = "participant" ]; then
     OPTION="${BIDS_ARGUMENTS##*--participant_label }"
     PARTICIPANTS="${OPTION%% --*}"
-    EXCLUDE="--exclude \'sub-*\' --exclude \'participants.tsv\' --exclude \'phenotype/*\'"
+    EXCLUDE="--exclude 'sub-\*' --exclude 'participants.tsv' --exclude 'phenotype/\*'"
     INCLUDES=""
     for PART in ${PARTICIPANTS[@]}
     do
-        INCLUDES+="--include \'sub-${PART}/*\' "
+        INCLUDES+="--include 'sub-${PART}/\*' "
     done
-    SNAPSHOT_COMMAND="aws s3 sync s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data ${EXCLUDE} ${INCLUDES}"
+    SNAPSHOT_COMMAND="aws s3 sync ${EXCLUDE} ${INCLUDES} s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 fi
 
 echo "SNAPSHOT_COMMAND"
