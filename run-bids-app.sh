@@ -139,7 +139,7 @@ else
     docker run --rm -d --name "$AWS_BATCH_JOB_ID"-lock -v "$BIDS_SNAPSHOT_ID":/snapshot -v "$AWS_BATCH_JOB_ID":/output $AWS_CLI_CONTAINER sh -c 'sleep 600'
 fi
 # Sync those volumes
-SNAPSHOT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
+SNAPSHOT_COMMAND="aws s3 sync s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 OUTPUT_COMMAND="aws s3 sync --only-show-errors s3://${BIDS_OUTPUT_BUCKET}/${BIDS_SNAPSHOT_ID}/${BIDS_ANALYSIS_ID} /output/data"
 
 # Only copy the participants needed for this analysis
@@ -152,7 +152,7 @@ if [ "$BIDS_ANALYSIS_LEVEL" = "participant" ]; then
     do
         INCLUDES+="--include 'sub-${PART}/*' "
     done
-    SNAPSHOT_COMMAND="aws s3 sync --only-show-errors ${EXCLUDE} ${INCLUDES} s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
+    SNAPSHOT_COMMAND="aws s3 sync ${EXCLUDE} ${INCLUDES} s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 fi
 
 if [ -z "$AWS_ACCESS_KEY_ID" ]; then
