@@ -147,7 +147,7 @@ if [ "$BIDS_ANALYSIS_LEVEL" = "participant" ]; then
     OPTION="${BIDS_ARGUMENTS##*--participant_label }"
     PARTICIPANTS="${OPTION%% --*}"
     # EXCLUDE="--exclude './sub-\*' --exclude './participants.tsv' --exclude './phenotype/\*'"
-    EXCLUDE="--exclude 'sub-*' --exclude 'participants.tsv' --exclude 'phenotype/*'"
+    EXCLUDE="--exclude sub-* --exclude participants.tsv --exclude phenotype/*"
     INCLUDES=""
     # for PART in ${PARTICIPANTS[@]}
     # do
