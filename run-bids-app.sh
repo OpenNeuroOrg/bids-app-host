@@ -148,10 +148,10 @@ if [ "$BIDS_ANALYSIS_LEVEL" = "participant" ]; then
     PARTICIPANTS="${OPTION%% --*}"
     EXCLUDE="--exclude 'sub-\*' --exclude 'participants.tsv' --exclude 'phenotype/\*'"
     INCLUDES=""
-    for PART in ${PARTICIPANTS[@]}
-    do
-        INCLUDES+="--include 'sub-${PART}/\*' "
-    done
+    # for PART in ${PARTICIPANTS[@]}
+    # do
+    #     INCLUDES+="--include 'sub-${PART}/\*' "
+    # done
     SNAPSHOT_COMMAND="aws s3 sync ${EXCLUDE} ${INCLUDES} s3://${BIDS_DATASET_BUCKET}/${BIDS_SNAPSHOT_ID} /snapshot/data"
 fi
 
