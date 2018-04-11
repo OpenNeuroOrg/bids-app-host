@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-echo "Starting openneuro/bids-app-host:0.8.4"
+echo "Starting openneuro/bids-app-host:0.8.5"
 
 docker info
 
@@ -91,7 +91,7 @@ function sync_output {
     else
         if (( $DOCKER_EC != 0 )); then
             # Pass any unhandled exit codes back to Batch
-            exit $?
+            exit $DOCKER_EC
         fi
     fi
     # Unlock these volumes
